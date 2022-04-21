@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,9 +23,8 @@ import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
-
 class MovieRecommender {
-	String filePath;
+	
 	int totalUsers = 0;
 	int totalReviews = 0;
 	int totalProducts = 0;
@@ -35,54 +33,57 @@ class MovieRecommender {
 	Hashtable<Integer, String> productsById =new Hashtable<Integer, String>();
 
 
-	MovieRecommender (String fileUrl) throws IOException {
-		filePath = fileUrl;
-        GZIPInputStream document = new GZIPInputStream(new FileInputStream(filePath));
+	public MovieRecommender (String fileUrl) throws IOException {
+        GZIPInputStream document = new GZIPInputStream(new FileInputStream(fileUrl));
         BufferedReader bReader = new BufferedReader(new InputStreamReader(document));
         String line;
         File result = new File("movies.csv");
         BufferedWriter bWriter = new BufferedWriter(new FileWriter(result));
 
-	}
-	public void decompressFile () throws IOException {
-    String DECOMPRESSED_FILE = "./movieRecommendations.txt";
-	 MovieRecommender gzip;
-		try {
-			System.out.print("Inside try catch");
-			gzip = new MovieRecommender("movies.txt.gz");
-			gzip.deCompressGZipFile("movies.txt.gz", DECOMPRESSED_FILE);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-  }
-	
-  public void deCompressGZipFile(String gzipFile, String destFile) {
-    FileInputStream fis = null;
-    FileOutputStream fos = null;
-    GZIPInputStream gZIPInputStream = null;
-    try {
-		System.out.print("Inside second try catch");
-      fis = new FileInputStream(gzipFile);
-      gZIPInputStream = new GZIPInputStream(fis);
-      fos = new FileOutputStream(destFile);
-      byte[] buffer = new byte[1024];
-      int len;
-      while((len = gZIPInputStream.read(buffer)) > 0){
-        fos.write(buffer, 0, len);
-      }
-    }catch (IOException e) {
-      e.printStackTrace();
-    }finally {
-      try {
-        if(gZIPInputStream != null) {				
-          gZIPInputStream.close();
+        String productListCSV = "";
+        String userListCSV = "";
+        String scoreListCSV = "";
+
+        int numProducts = 0;
+        int numUsers = 0;
+        int numReviews = 0;
+
+        while ((line = bReader.readLine()) != null){
+            if (line.startsWith("product/productId:")){
+                numReviews++;
+                String [] tempLine = line.split(" ");
+                String productId = tempLine[1];
+                if (!products.containsKey(productId)){
+                    products.put(productId, numProducts);
+                    productsById.put(numProducts,productId);
+                    numProducts++;
+                }
+                productListCSV = products.get(productId).toString();
+
+            } else if (line.startsWith("review/userId:")) {
+                
+                String [] tempLine = line.split(" ");
+                String userID = tempLine[1];
+                if (!users.containsKey(userID)){
+                    users.put(userID,numUsers++);
+                }
+                userListCSV = users.get(userID).toString();
+
+
+            } else if (line.startsWith("review/score:")){
+                String [] tempLine = line.split(" ");
+                scoreListCSV = tempLine[1];
+                bWriter.write(userListCSV + "," + productListCSV + "," + scoreListCSV + "\n");
+            }
         }
-        if(fos != null) {				
-          fos.close();					
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+
+        bReader.close();
+        bWriter.close();
+
+        this.totalReviews = numReviews;
+        this.totalProducts = products.size();
+        this.totalUsers = users.size();
+
     }
 
 	
@@ -100,17 +101,19 @@ class MovieRecommender {
 
 
 	public List<String> getRecommendations(String userId) throws IOException, TasteException {
+		List<String> results = new ArrayList<String>();
+
 		DataModel model = new FileDataModel(new File("movies.csv"));
 		UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
 		UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, model);
 		UserBasedRecommender recommender = new GenericUserBasedRecommender(model, neighborhood, similarity);
 
-		List<String> recommendations = new ArrayList<String>();
-		for (RecommendedItem recommendation : recommender.recommend(users.get(userId), 3)) {
-			recommendations.add(productsById.get((int) (recommendation.getItemID())));
+		List<RecommendedItem> allRecommendations = recommender.recommend(users.get(userId), 3);
+		for (RecommendedItem recommendation : allRecommendations ) {
+			results.add(productsById.get((int)recommendation.getItemID()));
 		}
 
-		return recommendations;
+		return results;
 	}
 
 }
