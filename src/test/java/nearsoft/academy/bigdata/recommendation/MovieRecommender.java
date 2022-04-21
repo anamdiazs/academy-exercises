@@ -1,9 +1,13 @@
 package nearsoft.academy.bigdata.recommendation;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -23,23 +27,21 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
 class MovieRecommender {
 	String filePath;
-	int totalUsers;
-	int totalReviews;
-	int totalProducts;
-	Hashtable<String, Integer> users;
-	Hashtable<String, Integer> products;
-	Hashtable<Integer, String> productsById;
+	int totalUsers = 0;
+	int totalReviews = 0;
+	int totalProducts = 0;
+	Hashtable<String, Integer> users = new Hashtable<String, Integer>();
+	Hashtable<String, Integer> products = new Hashtable<String, Integer>();
+	Hashtable<Integer, String> productsById =new Hashtable<Integer, String>();
+
 
 	MovieRecommender (String fileUrl) throws IOException {
 		filePath = fileUrl;
-		users = new Hashtable<String, Integer>();
-		products = new Hashtable<String, Integer>();
-		productsById = new Hashtable<Integer, String>();
-		totalUsers = 0;
-		totalReviews = 0;
-		totalProducts = 0;
-		decompressFile();
-		decompressFile();
+        GZIPInputStream document = new GZIPInputStream(new FileInputStream(filePath));
+        BufferedReader bReader = new BufferedReader(new InputStreamReader(document));
+        String line;
+        File result = new File("movies.csv");
+        BufferedWriter bWriter = new BufferedWriter(new FileWriter(result));
 
 	}
 	public void decompressFile () throws IOException {
@@ -82,7 +84,19 @@ class MovieRecommender {
         e.printStackTrace();
       }
     }
-  }
+
+	
+	public int getTotalUsers() {
+		return this.totalUsers;
+	}
+
+	public int getTotalReviews() {
+		return this.totalReviews;
+	}
+
+	public int getTotalProducts() {
+		return this.totalProducts;
+	}
 
 
 	public List<String> getRecommendations(String userId) throws IOException, TasteException {
@@ -99,15 +113,4 @@ class MovieRecommender {
 		return recommendations;
 	}
 
-	public int getTotalUsers() {
-		return totalUsers;
-	}
-
-	public int getTotalReviews() {
-		return totalReviews;
-	}
-
-	public int getTotalProducts() {
-		return totalProducts;
-	}
 }
