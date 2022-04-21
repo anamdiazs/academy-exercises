@@ -1,10 +1,13 @@
 package nearsoft.academy.bigdata.recommendation;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
@@ -17,6 +20,7 @@ import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
+
 class MovieRecommender {
 	String filePath;
 	int totalUsers;
@@ -26,7 +30,7 @@ class MovieRecommender {
 	Hashtable<String, Integer> products;
 	Hashtable<Integer, String> productsById;
 
-	MovieRecommender(String fileUrl) throws IOException {
+	MovieRecommender (String fileUrl) throws IOException {
 		filePath = fileUrl;
 		users = new Hashtable<String, Integer>();
 		products = new Hashtable<String, Integer>();
@@ -34,11 +38,55 @@ class MovieRecommender {
 		totalUsers = 0;
 		totalReviews = 0;
 		totalProducts = 0;
+		decompressFile();
+		decompressFile();
 
 	}
+	public void decompressFile () throws IOException {
+    String DECOMPRESSED_FILE = "./movieRecommendations.txt";
+	 MovieRecommender gzip;
+		try {
+			System.out.print("Inside try catch");
+			gzip = new MovieRecommender("movies.txt.gz");
+			gzip.deCompressGZipFile("movies.txt.gz", DECOMPRESSED_FILE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+  }
+	
+  public void deCompressGZipFile(String gzipFile, String destFile) {
+    FileInputStream fis = null;
+    FileOutputStream fos = null;
+    GZIPInputStream gZIPInputStream = null;
+    try {
+		System.out.print("Inside second try catch");
+      fis = new FileInputStream(gzipFile);
+      gZIPInputStream = new GZIPInputStream(fis);
+      fos = new FileOutputStream(destFile);
+      byte[] buffer = new byte[1024];
+      int len;
+      while((len = gZIPInputStream.read(buffer)) > 0){
+        fos.write(buffer, 0, len);
+      }
+    }catch (IOException e) {
+      e.printStackTrace();
+    }finally {
+      try {
+        if(gZIPInputStream != null) {				
+          gZIPInputStream.close();
+        }
+        if(fos != null) {				
+          fos.close();					
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
 
 	public List<String> getRecommendations(String userId) throws IOException, TasteException {
-		DataModel model = new FileDataModel(new File("moviesRecommendation.csv"));
+		DataModel model = new FileDataModel(new File("movies.csv"));
 		UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
 		UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, model);
 		UserBasedRecommender recommender = new GenericUserBasedRecommender(model, neighborhood, similarity);
