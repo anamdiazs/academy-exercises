@@ -34,6 +34,7 @@ class MovieRecommender {
 
 
 	public MovieRecommender (String fileUrl) throws IOException {
+			//Decompress file 
         GZIPInputStream document = new GZIPInputStream(new FileInputStream(fileUrl));
         BufferedReader bReader = new BufferedReader(new InputStreamReader(document));
         String line;
@@ -44,19 +45,20 @@ class MovieRecommender {
         String userListCSV = "";
         String scoreListCSV = "";
 
-        int numProducts = 0;
-        int numUsers = 0;
-        int numReviews = 0;
+        int numberProducts = 0;
+        int numberUsers = 0;
+        int numberReviews = 0;
 
+		  //Fill hashtables with the data
         while ((line = bReader.readLine()) != null){
             if (line.startsWith("product/productId:")){
-                numReviews++;
+                numberReviews++;
                 String [] tempLine = line.split(" ");
                 String productId = tempLine[1];
                 if (!products.containsKey(productId)){
-                    products.put(productId, numProducts);
-                    productsById.put(numProducts,productId);
-                    numProducts++;
+                    products.put(productId, numberProducts);
+                    productsById.put(numberProducts,productId);
+                    numberProducts++;
                 }
                 productListCSV = products.get(productId).toString();
 
@@ -65,7 +67,7 @@ class MovieRecommender {
                 String [] tempLine = line.split(" ");
                 String userID = tempLine[1];
                 if (!users.containsKey(userID)){
-                    users.put(userID,numUsers++);
+                    users.put(userID,numberUsers++);
                 }
                 userListCSV = users.get(userID).toString();
 
@@ -80,7 +82,7 @@ class MovieRecommender {
         bReader.close();
         bWriter.close();
 
-        this.totalReviews = numReviews;
+        this.totalReviews = numberReviews;
         this.totalProducts = products.size();
         this.totalUsers = users.size();
 
@@ -99,7 +101,7 @@ class MovieRecommender {
 		return this.totalProducts;
 	}
 
-
+	// Created System recommendation 
 	public List<String> getRecommendations(String userId) throws IOException, TasteException {
 		List<String> results = new ArrayList<String>();
 
